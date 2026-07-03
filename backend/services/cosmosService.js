@@ -14,6 +14,8 @@ const {
   AZURE_COSMOS_DATABASE = 'inventory-db',
   AZURE_COSMOS_CONTAINER = 'products',
   AZURE_COSMOS_USERS_CONTAINER = 'users',
+  AZURE_COSMOS_SUPPLIERS_CONTAINER = 'suppliers',
+  AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER = 'purchaseOrders',
 } = process.env;
 
 // Lazily-initialized client/container handles.
@@ -121,3 +123,56 @@ export async function deleteUser(id) {
   await getUsersContainer().item(id, id).delete();
   return { id };
 }
+
+// ---------------------------------------------------------------------------
+// Generic container CRUD (suppliers, purchase orders) — partition key `/id`
+// ---------------------------------------------------------------------------
+
+const namedContainers = {};
+function getNamedContainer(name) {
+  if (namedContainers[name]) return namedContainers[name];
+  namedContainers[name] = ensureClient().database(AZURE_COSMOS_DATABASE).container(name);
+  return namedContainers[name];
+}
+
+async function listAll(name) {
+  const { resources } = await getNamedContainer(name).items.readAll().fetchAll();
+  return resources;
+}
+async function getById(name, id) {
+  try {
+    const { resource } = await getNamedContainer(name).item(id, id).read();
+    return resource ?? null;
+  } catch (err) {
+    if (err.code === 404) return null;
+    throw err;
+  }
+}
+async function createItem(name, item) {
+  const { resource } = await getNamedContainer(name).items.create(item);
+  return resource;
+}
+async function replaceItem(name, id, item) {
+  const { resource } = await getNamedContainer(name).item(id, id).replace({ ...item, id });
+  return resource;
+}
+async function deleteItem(name, id) {
+  await getNamedContainer(name).item(id, id).delete();
+  return { id };
+}
+
+// Suppliers
+export const listSuppliers = () => listAll(AZURE_COSMOS_SUPPLIERS_CONTAINER);
+export const getSupplier = (id) => getById(AZURE_COSMOS_SUPPLIERS_CONTAINER, id);
+export const createSupplier = (s) => createItem(AZURE_COSMOS_SUPPLIERS_CONTAINER, s);
+export const updateSupplier = (id, s) => replaceItem(AZURE_COSMOS_SUPPLIERS_CONTAINER, id, s);
+export const deleteSupplier = (id) => deleteItem(AZURE_COSMOS_SUPPLIERS_CONTAINER, id);
+
+// Purchase orders
+export const listPurchaseOrders = () => listAll(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER);
+export const getPurchaseOrder = (id) => getById(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, id);
+export const createPurchaseOrder = (po) => createItem(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, po);
+export const updatePurchaseOrder = (id, po) =>
+  replaceItem(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, id, po);
+export const deletePurchaseOrder = (id) =>
+  deleteItem(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, id);

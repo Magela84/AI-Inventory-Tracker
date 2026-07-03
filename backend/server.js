@@ -8,6 +8,8 @@ import alertsRoutes from './routes/alerts.js';
 import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import suppliersRoutes from './routes/suppliers.js';
+import purchaseOrdersRoutes from './routes/purchaseOrders.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiKeyAuth } from './middleware/auth.js';
 import { requireAuth } from './middleware/requireAuth.js';
@@ -37,6 +39,8 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/suppliers', suppliersRoutes);
+app.use('/api/purchase-orders', purchaseOrdersRoutes);
 
 // Centralized error handling (must be last)
 app.use(errorHandler);

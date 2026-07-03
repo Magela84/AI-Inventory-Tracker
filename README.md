@@ -21,8 +21,9 @@ natural language search + reorder suggestions.
 ai-inventory-tracker/
 ├── backend/
 │   ├── server.js              # Express entrypoint
-│   ├── routes/                # inventory, alerts, ai, auth, users
-│   ├── services/              # cosmos, anomaly, openai, forecast, copilot, auth
+│   ├── routes/                # inventory, alerts, ai, auth, users, suppliers, purchaseOrders
+│   ├── services/              # cosmos, anomaly, openai, forecast, copilot, auth,
+│   │                          #   supplier, purchaseOrder
 │   ├── scripts/seed.js        # seed mock products into Cosmos DB
 │   ├── mocks/                 # mock data for MOCK_DATA=true
 │   ├── middleware/            # errorHandler
@@ -36,7 +37,8 @@ ai-inventory-tracker/
 │   │   │                      #   Copilot (GPT-4o chat agent that acts on inventory),
 │   │   │                      #   RunwayBar (days-of-stock indicator),
 │   │   │                      #   PhotoIntake (GPT-4o Vision product scan),
-│   │   │                      #   Login, UsersManager (auth + admin user mgmt)
+│   │   │                      #   Login, UsersManager (auth + admin user mgmt),
+│   │   │                      #   SuppliersManager, PurchaseOrders (procurement)
 │   │   ├── context/AuthContext.jsx  # current user + JWT state
 │   │   ├── pages/Dashboard.jsx
 │   │   ├── lib/api.js         # backend API client
@@ -129,6 +131,8 @@ See [`backend/.env.example`](backend/.env.example).
 | `AZURE_COSMOS_ENDPOINT` / `AZURE_COSMOS_KEY` | Cosmos DB connection |
 | `AZURE_COSMOS_DATABASE` / `AZURE_COSMOS_CONTAINER` | Database + product container names |
 | `AZURE_COSMOS_USERS_CONTAINER` | Users container name (default `users`) |
+| `AZURE_COSMOS_SUPPLIERS_CONTAINER` | Suppliers container (default `suppliers`) |
+| `AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER` | Purchase orders container (default `purchaseOrders`) |
 | `JWT_SECRET` | Secret for signing user JWTs (set a long random value in production) |
 | `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_KEY` / `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI (GPT-4o) |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version (default `2024-10-21`) |
@@ -153,6 +157,10 @@ See [`backend/.env.example`](backend/.env.example).
 | GET    | `/api/auth/me` | Current authenticated user |
 | GET/POST/PUT/DELETE | `/api/users` | User management (**admin only**) |
 | GET/POST/PUT/DELETE | `/api/inventory` | Product CRUD (delete is **admin only**) |
+| GET/POST/PUT/DELETE | `/api/suppliers` | Supplier management (delete **admin only**) |
+| GET/POST | `/api/purchase-orders` | List / create purchase orders |
+| POST   | `/api/purchase-orders/:id/approve` | Approve a draft PO (**admin only**) |
+| POST   | `/api/purchase-orders/:id/receive` | Receive an approved PO — **increments stock** |
 | GET    | `/api/inventory/:id/forecast` | Demand forecast |
 | GET    | `/api/alerts/low-stock` | Products below reorder threshold |
 | GET    | `/api/alerts/anomalies/:id` | Anomaly detection for a product |
@@ -176,6 +184,19 @@ Two roles:
 
 - **admin** — full access, including user management and product deletion.
 - **staff** — everything except user management and deleting products.
+
+### Suppliers & purchase orders
+
+Suppliers are managed records (contact, email, lead time). Purchase orders follow
+a lifecycle — **draft → approved → received** — created from the Purchase Orders
+modal by choosing a supplier and adding product line items:
+
+- **draft** — created/edited by any user; `total` is computed from line items.
+- **approved** — an admin approves a draft (separation of duties).
+- **received** — receiving an approved PO **increments each line item's product
+  stock**, connecting procurement to inventory. Deleting/cancelling is admin-only.
+
+### Authentication & roles
 
 Passwords are hashed with bcrypt; JWTs are signed with `JWT_SECRET`. In
 `MOCK_DATA=true` the seeded demo users are **admin / admin123** and

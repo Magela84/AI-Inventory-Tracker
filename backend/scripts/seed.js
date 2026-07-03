@@ -13,6 +13,8 @@ import { DefaultAzureCredential } from '@azure/identity';
 
 import { products } from '../mocks/inventory.js';
 import { users } from '../mocks/users.js';
+import { suppliers } from '../mocks/suppliers.js';
+import { purchaseOrders } from '../mocks/purchaseOrders.js';
 
 const {
   AZURE_COSMOS_ENDPOINT,
@@ -20,6 +22,8 @@ const {
   AZURE_COSMOS_DATABASE = 'inventory-db',
   AZURE_COSMOS_CONTAINER = 'products',
   AZURE_COSMOS_USERS_CONTAINER = 'users',
+  AZURE_COSMOS_SUPPLIERS_CONTAINER = 'suppliers',
+  AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER = 'purchaseOrders',
 } = process.env;
 
 async function main() {
@@ -67,8 +71,22 @@ async function main() {
     console.log(`  upserted ${user.username} (${user.role})`);
   }
 
+  // Suppliers + purchase orders
+  const seedContainer = async (id, records, label) => {
+    console.log(`Ensuring container "${id}" (partition key /id)…`);
+    const { container: c } = await database.containers.createIfNotExists({
+      id,
+      partitionKey: { paths: ['/id'] },
+    });
+    for (const record of records) await c.items.upsert(record);
+    console.log(`  seeded ${records.length} ${label}`);
+  };
+  await seedContainer(AZURE_COSMOS_SUPPLIERS_CONTAINER, suppliers, 'supplier(s)');
+  await seedContainer(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, purchaseOrders, 'purchase order(s)');
+
   console.log(
-    `\nDone. Seeded ${count} product(s) and ${userCount} user(s) into ${AZURE_COSMOS_DATABASE}.`
+    `\nDone. Seeded ${count} product(s), ${userCount} user(s), ` +
+      `${suppliers.length} supplier(s), and ${purchaseOrders.length} PO(s) into ${AZURE_COSMOS_DATABASE}.`
   );
   console.log('Default logins: admin/admin123, staff/staff123 — change these in production.');
 }

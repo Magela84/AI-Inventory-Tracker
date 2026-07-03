@@ -11,6 +11,8 @@ import ProductDetail from '../components/ProductDetail.jsx';
 import Copilot from '../components/Copilot.jsx';
 import PhotoIntake from '../components/PhotoIntake.jsx';
 import UsersManager from '../components/UsersManager.jsx';
+import SuppliersManager from '../components/SuppliersManager.jsx';
+import PurchaseOrders from '../components/PurchaseOrders.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   getInventory,
@@ -27,6 +29,8 @@ import {
 export default function Dashboard() {
   const { user, isAdmin, logout } = useAuth();
   const [showUsers, setShowUsers] = useState(false);
+  const [showSuppliers, setShowSuppliers] = useState(false);
+  const [showPurchaseOrders, setShowPurchaseOrders] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [visibleProducts, setVisibleProducts] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -170,6 +174,18 @@ export default function Dashboard() {
           >
             + Add Product
           </button>
+          <button
+            onClick={() => setShowSuppliers(true)}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Suppliers
+          </button>
+          <button
+            onClick={() => setShowPurchaseOrders(true)}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Purchase Orders
+          </button>
           {isAdmin && (
             <button
               onClick={() => setShowUsers(true)}
@@ -269,6 +285,16 @@ export default function Dashboard() {
       )}
 
       {showUsers && <UsersManager onClose={() => setShowUsers(false)} />}
+
+      {showSuppliers && <SuppliersManager onClose={() => setShowSuppliers(false)} />}
+
+      {showPurchaseOrders && (
+        <PurchaseOrders
+          products={allProducts}
+          onChanged={loadAll}
+          onClose={() => setShowPurchaseOrders(false)}
+        />
+      )}
 
       <Copilot onChanged={loadAll} />
     </div>

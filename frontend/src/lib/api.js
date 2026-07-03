@@ -58,6 +58,25 @@ export const updateUser = (id, data) =>
   request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteUser = (id) => request(`/users/${id}`, { method: 'DELETE' });
 
+// Suppliers
+export const getSuppliers = () => request('/suppliers');
+export const createSupplier = (data) =>
+  request('/suppliers', { method: 'POST', body: JSON.stringify(data) });
+export const updateSupplier = (id, data) =>
+  request(`/suppliers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteSupplier = (id) => request(`/suppliers/${id}`, { method: 'DELETE' });
+
+// Purchase orders
+export const getPurchaseOrders = () => request('/purchase-orders');
+export const createPurchaseOrder = (data) =>
+  request('/purchase-orders', { method: 'POST', body: JSON.stringify(data) });
+export const approvePurchaseOrder = (id) =>
+  request(`/purchase-orders/${id}/approve`, { method: 'POST' });
+export const receivePurchaseOrder = (id) =>
+  request(`/purchase-orders/${id}/receive`, { method: 'POST' });
+export const deletePurchaseOrder = (id) =>
+  request(`/purchase-orders/${id}`, { method: 'DELETE' });
+
 // Inventory
 export const getInventory = () => request('/inventory');
 export const getProduct = (id) => request(`/inventory/${id}`);
@@ -123,6 +142,15 @@ export default {
   createUser,
   updateUser,
   deleteUser,
+  getSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+  getPurchaseOrders,
+  createPurchaseOrder,
+  approvePurchaseOrder,
+  receivePurchaseOrder,
+  deletePurchaseOrder,
   setAuthToken,
   setUnauthorizedHandler,
   toForecastChartData,
