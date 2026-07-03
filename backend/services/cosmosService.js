@@ -13,31 +13,43 @@ const {
   AZURE_COSMOS_KEY,
   AZURE_COSMOS_DATABASE = 'inventory-db',
   AZURE_COSMOS_CONTAINER = 'products',
+  AZURE_COSMOS_USERS_CONTAINER = 'users',
 } = process.env;
 
 // Lazily-initialized client/container handles.
 let client;
 let container;
+let usersContainer;
 
-// Initialize the Cosmos client and cache the container handle.
-export function getContainer() {
-  if (container) return container;
-
+// Initialize (once) and return the shared Cosmos client.
+function ensureClient() {
+  if (client) return client;
   if (!AZURE_COSMOS_ENDPOINT) {
     throw new Error('AZURE_COSMOS_ENDPOINT is not configured');
   }
+  client = AZURE_COSMOS_KEY
+    ? new CosmosClient({ endpoint: AZURE_COSMOS_ENDPOINT, key: AZURE_COSMOS_KEY })
+    : new CosmosClient({
+        endpoint: AZURE_COSMOS_ENDPOINT,
+        aadCredentials: new DefaultAzureCredential(),
+      });
+  return client;
+}
 
-  if (!client) {
-    client = AZURE_COSMOS_KEY
-      ? new CosmosClient({ endpoint: AZURE_COSMOS_ENDPOINT, key: AZURE_COSMOS_KEY })
-      : new CosmosClient({
-          endpoint: AZURE_COSMOS_ENDPOINT,
-          aadCredentials: new DefaultAzureCredential(),
-        });
-  }
-
-  container = client.database(AZURE_COSMOS_DATABASE).container(AZURE_COSMOS_CONTAINER);
+// Cache the products container handle.
+export function getContainer() {
+  if (container) return container;
+  container = ensureClient().database(AZURE_COSMOS_DATABASE).container(AZURE_COSMOS_CONTAINER);
   return container;
+}
+
+// Cache the users container handle.
+export function getUsersContainer() {
+  if (usersContainer) return usersContainer;
+  usersContainer = ensureClient()
+    .database(AZURE_COSMOS_DATABASE)
+    .container(AZURE_COSMOS_USERS_CONTAINER);
+  return usersContainer;
 }
 
 // List all products.
@@ -73,5 +85,39 @@ export async function updateProduct(id, product) {
 // Delete a product by id.
 export async function deleteProduct(id) {
   await getContainer().item(id, id).delete();
+  return { id };
+}
+
+// ---------------------------------------------------------------------------
+// Users container (for authentication / user management)
+// ---------------------------------------------------------------------------
+
+export async function listUsers() {
+  const { resources } = await getUsersContainer().items.readAll().fetchAll();
+  return resources;
+}
+
+export async function getUserByUsername(username) {
+  const { resources } = await getUsersContainer()
+    .items.query({
+      query: 'SELECT * FROM c WHERE c.username = @username',
+      parameters: [{ name: '@username', value: username }],
+    })
+    .fetchAll();
+  return resources[0] ?? null;
+}
+
+export async function createUser(user) {
+  const { resource } = await getUsersContainer().items.create(user);
+  return resource;
+}
+
+export async function updateUser(id, user) {
+  const { resource } = await getUsersContainer().item(id, id).replace({ ...user, id });
+  return resource;
+}
+
+export async function deleteUser(id) {
+  await getUsersContainer().item(id, id).delete();
   return { id };
 }

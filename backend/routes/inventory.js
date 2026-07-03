@@ -4,6 +4,7 @@ import { Router } from 'express';
 import * as cosmosService from '../services/cosmosService.js';
 import * as forecastService from '../services/forecastService.js';
 import { validateProductBody } from '../middleware/validate.js';
+import { requireRole } from '../middleware/requireAuth.js';
 import { products as mockProducts } from '../mocks/inventory.js';
 
 const router = Router();
@@ -72,8 +73,8 @@ router.put('/:id', validateProductBody({ requireName: false }), async (req, res,
   }
 });
 
-// DELETE /api/inventory/:id — remove product
-router.delete('/:id', async (req, res, next) => {
+// DELETE /api/inventory/:id — remove product (admin only)
+router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
     if (useMock()) {
       const idx = mockProducts.findIndex((p) => p.id === req.params.id);

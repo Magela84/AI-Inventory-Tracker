@@ -6,8 +6,11 @@ import 'dotenv/config';
 import inventoryRoutes from './routes/inventory.js';
 import alertsRoutes from './routes/alerts.js';
 import aiRoutes from './routes/ai.js';
+import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/users.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiKeyAuth } from './middleware/auth.js';
+import { requireAuth } from './middleware/requireAuth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,13 +24,19 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', mock: process.env.MOCK_DATA === 'true' });
 });
 
-// Guard feature routes with optional API-key auth (no-op when API_KEY unset).
-app.use('/api', apiKeyAuth);
+// Auth routes are public (login) — must be registered before requireAuth.
+app.use('/api/auth', authRoutes);
 
-// Feature routes
+// Guard feature routes with optional API-key auth (no-op when API_KEY unset)
+// and require a valid user token.
+app.use('/api', apiKeyAuth);
+app.use('/api', requireAuth);
+
+// Feature routes (all require authentication)
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/users', usersRoutes);
 
 // Centralized error handling (must be last)
 app.use(errorHandler);

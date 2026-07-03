@@ -21,8 +21,8 @@ natural language search + reorder suggestions.
 ai-inventory-tracker/
 ├── backend/
 │   ├── server.js              # Express entrypoint
-│   ├── routes/                # inventory, alerts, ai
-│   ├── services/              # cosmos, anomaly, openai, forecast, copilot
+│   ├── routes/                # inventory, alerts, ai, auth, users
+│   ├── services/              # cosmos, anomaly, openai, forecast, copilot, auth
 │   ├── scripts/seed.js        # seed mock products into Cosmos DB
 │   ├── mocks/                 # mock data for MOCK_DATA=true
 │   ├── middleware/            # errorHandler
@@ -35,7 +35,9 @@ ai-inventory-tracker/
 │   │   │                      #   ProductDetail (side panel: history + forecast + anomalies),
 │   │   │                      #   Copilot (GPT-4o chat agent that acts on inventory),
 │   │   │                      #   RunwayBar (days-of-stock indicator),
-│   │   │                      #   PhotoIntake (GPT-4o Vision product scan)
+│   │   │                      #   PhotoIntake (GPT-4o Vision product scan),
+│   │   │                      #   Login, UsersManager (auth + admin user mgmt)
+│   │   ├── context/AuthContext.jsx  # current user + JWT state
 │   │   ├── pages/Dashboard.jsx
 │   │   ├── lib/api.js         # backend API client
 │   │   ├── App.jsx
@@ -125,7 +127,9 @@ See [`backend/.env.example`](backend/.env.example).
 | Variable | Description |
 |----------|-------------|
 | `AZURE_COSMOS_ENDPOINT` / `AZURE_COSMOS_KEY` | Cosmos DB connection |
-| `AZURE_COSMOS_DATABASE` / `AZURE_COSMOS_CONTAINER` | Database + container names |
+| `AZURE_COSMOS_DATABASE` / `AZURE_COSMOS_CONTAINER` | Database + product container names |
+| `AZURE_COSMOS_USERS_CONTAINER` | Users container name (default `users`) |
+| `JWT_SECRET` | Secret for signing user JWTs (set a long random value in production) |
 | `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_KEY` / `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI (GPT-4o) |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version (default `2024-10-21`) |
 | `AZURE_ANOMALY_DETECTOR_ENDPOINT` / `AZURE_ANOMALY_DETECTOR_KEY` | Anomaly Detector |
@@ -144,8 +148,11 @@ See [`backend/.env.example`](backend/.env.example).
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET    | `/api/health` | Health check |
-| GET/POST/PUT/DELETE | `/api/inventory` | Product CRUD |
+| GET    | `/api/health` | Health check (public) |
+| POST   | `/api/auth/login` | Exchange credentials for a JWT (public) |
+| GET    | `/api/auth/me` | Current authenticated user |
+| GET/POST/PUT/DELETE | `/api/users` | User management (**admin only**) |
+| GET/POST/PUT/DELETE | `/api/inventory` | Product CRUD (delete is **admin only**) |
 | GET    | `/api/inventory/:id/forecast` | Demand forecast |
 | GET    | `/api/alerts/low-stock` | Products below reorder threshold |
 | GET    | `/api/alerts/anomalies/:id` | Anomaly detection for a product |
@@ -154,11 +161,28 @@ See [`backend/.env.example`](backend/.env.example).
 | POST   | `/api/ai/copilot` | Conversational agent that can inspect **and modify** inventory |
 | POST   | `/api/ai/extract` | Extract product rows from an uploaded image (GPT-4o Vision) |
 
-**Validation & auth:** product writes (`POST`/`PUT /api/inventory`) are validated
+**Validation:** product writes (`POST`/`PUT /api/inventory`) are validated
 (name required on create; numeric fields must be numbers ≥ 0) and return `400`
-with details on failure. Setting `API_KEY` guards every route except `/api/health`
-behind an `x-api-key` header. Errors are shaped uniformly as
+with details on failure. Errors are shaped uniformly as
 `{ error: { status, message, details? } }`.
+
+### Authentication & roles
+
+Users log in (`POST /api/auth/login`) and receive a JWT; the frontend stores it
+and sends it as `Authorization: Bearer <token>` on every request. All `/api`
+routes except `/api/health` and `/api/auth/login` require a valid token.
+
+Two roles:
+
+- **admin** — full access, including user management and product deletion.
+- **staff** — everything except user management and deleting products.
+
+Passwords are hashed with bcrypt; JWTs are signed with `JWT_SECRET`. In
+`MOCK_DATA=true` the seeded demo users are **admin / admin123** and
+**staff / staff123** (shown on the login screen). For real Azure, `npm run seed`
+creates a `users` container and seeds the same two accounts — **change these
+passwords in production.** The optional `API_KEY` gate still applies on top when
+set (belt-and-suspenders for machine-to-machine callers).
 
 ### Inventory Copilot
 

@@ -12,12 +12,14 @@ import { CosmosClient } from '@azure/cosmos';
 import { DefaultAzureCredential } from '@azure/identity';
 
 import { products } from '../mocks/inventory.js';
+import { users } from '../mocks/users.js';
 
 const {
   AZURE_COSMOS_ENDPOINT,
   AZURE_COSMOS_KEY,
   AZURE_COSMOS_DATABASE = 'inventory-db',
   AZURE_COSMOS_CONTAINER = 'products',
+  AZURE_COSMOS_USERS_CONTAINER = 'users',
 } = process.env;
 
 async function main() {
@@ -52,9 +54,23 @@ async function main() {
     console.log(`  upserted ${product.id} — ${product.name}`);
   }
 
+  console.log(`Ensuring container "${AZURE_COSMOS_USERS_CONTAINER}" (partition key /id)…`);
+  const { container: usersContainer } = await database.containers.createIfNotExists({
+    id: AZURE_COSMOS_USERS_CONTAINER,
+    partitionKey: { paths: ['/id'] },
+  });
+
+  let userCount = 0;
+  for (const user of users) {
+    await usersContainer.items.upsert(user);
+    userCount += 1;
+    console.log(`  upserted ${user.username} (${user.role})`);
+  }
+
   console.log(
-    `\nDone. Seeded ${count} product(s) into ${AZURE_COSMOS_DATABASE}/${AZURE_COSMOS_CONTAINER}.`
+    `\nDone. Seeded ${count} product(s) and ${userCount} user(s) into ${AZURE_COSMOS_DATABASE}.`
   );
+  console.log('Default logins: admin/admin123, staff/staff123 — change these in production.');
 }
 
 main().catch((err) => {

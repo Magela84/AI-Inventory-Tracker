@@ -2,11 +2,27 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 const API_KEY = import.meta.env.VITE_API_KEY;
 
+// Auth token + expiry handler, set by the AuthContext.
+let authToken = null;
+let onUnauthorized = null;
+export function setAuthToken(token) {
+  authToken = token;
+}
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (API_KEY) headers['x-api-key'] = API_KEY;
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  // A 401 while we hold a token means the session expired — trigger logout.
+  if (res.status === 401 && authToken) {
+    onUnauthorized?.();
+  }
 
   if (!res.ok) {
     // Surface the server's error message + validation details when present.
@@ -28,6 +44,19 @@ async function request(path, options = {}) {
   if (res.status === 204) return null;
   return res.json();
 }
+
+// Auth
+export const login = (username, password) =>
+  request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+export const getMe = () => request('/auth/me');
+
+// Users (admin)
+export const getUsers = () => request('/users');
+export const createUser = (data) =>
+  request('/users', { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) =>
+  request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => request(`/users/${id}`, { method: 'DELETE' });
 
 // Inventory
 export const getInventory = () => request('/inventory');
@@ -88,5 +117,13 @@ export default {
   getReorderSuggestions,
   copilot,
   extractProducts,
+  login,
+  getMe,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  setAuthToken,
+  setUnauthorizedHandler,
   toForecastChartData,
 };

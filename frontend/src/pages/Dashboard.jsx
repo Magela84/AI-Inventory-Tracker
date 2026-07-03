@@ -10,6 +10,8 @@ import ProductForm from '../components/ProductForm.jsx';
 import ProductDetail from '../components/ProductDetail.jsx';
 import Copilot from '../components/Copilot.jsx';
 import PhotoIntake from '../components/PhotoIntake.jsx';
+import UsersManager from '../components/UsersManager.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import {
   getInventory,
   getLowStock,
@@ -23,6 +25,8 @@ import {
 } from '../lib/api.js';
 
 export default function Dashboard() {
+  const { user, isAdmin, logout } = useAuth();
+  const [showUsers, setShowUsers] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [visibleProducts, setVisibleProducts] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -153,7 +157,7 @@ export default function Dashboard() {
             Smart inventory monitoring with forecasting, anomaly detection, and AI search.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setScanning(true)}
             className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -166,6 +170,26 @@ export default function Dashboard() {
           >
             + Add Product
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowUsers(true)}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Users
+            </button>
+          )}
+          <div className="ml-2 flex items-center gap-2 border-l border-gray-200 pl-3">
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-800">{user?.name}</div>
+              <div className="text-xs capitalize text-gray-400">{user?.role}</div>
+            </div>
+            <button
+              onClick={logout}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -194,7 +218,7 @@ export default function Dashboard() {
             anomalyIds={anomalyIds}
             onSelect={setDetailProduct}
             onEdit={(product) => setForm({ mode: 'edit', product })}
-            onDelete={handleDelete}
+            onDelete={isAdmin ? handleDelete : undefined}
           />
         </div>
         <div className="space-y-6">
@@ -243,6 +267,8 @@ export default function Dashboard() {
       {scanning && (
         <PhotoIntake onClose={() => setScanning(false)} onCreated={loadAll} />
       )}
+
+      {showUsers && <UsersManager onClose={() => setShowUsers(false)} />}
 
       <Copilot onChanged={loadAll} />
     </div>
