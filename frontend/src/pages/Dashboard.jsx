@@ -13,6 +13,7 @@ import PhotoIntake from '../components/PhotoIntake.jsx';
 import UsersManager from '../components/UsersManager.jsx';
 import SuppliersManager from '../components/SuppliersManager.jsx';
 import PurchaseOrders from '../components/PurchaseOrders.jsx';
+import MovementsLedger from '../components/MovementsLedger.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   getInventory,
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [showUsers, setShowUsers] = useState(false);
   const [showSuppliers, setShowSuppliers] = useState(false);
   const [showPurchaseOrders, setShowPurchaseOrders] = useState(false);
+  const [showLedger, setShowLedger] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [visibleProducts, setVisibleProducts] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -186,6 +188,12 @@ export default function Dashboard() {
           >
             Purchase Orders
           </button>
+          <button
+            onClick={() => setShowLedger(true)}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Ledger
+          </button>
           {isAdmin && (
             <button
               onClick={() => setShowUsers(true)}
@@ -275,8 +283,10 @@ export default function Dashboard() {
 
       {detailProduct && (
         <ProductDetail
+          key={detailProduct.id}
           product={detailProduct}
           onClose={() => setDetailProduct(null)}
+          onChanged={loadAll}
         />
       )}
 
@@ -295,6 +305,8 @@ export default function Dashboard() {
           onClose={() => setShowPurchaseOrders(false)}
         />
       )}
+
+      {showLedger && <MovementsLedger onClose={() => setShowLedger(false)} />}
 
       <Copilot onChanged={loadAll} />
     </div>

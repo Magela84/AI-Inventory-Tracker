@@ -16,6 +16,7 @@ const {
   AZURE_COSMOS_USERS_CONTAINER = 'users',
   AZURE_COSMOS_SUPPLIERS_CONTAINER = 'suppliers',
   AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER = 'purchaseOrders',
+  AZURE_COSMOS_MOVEMENTS_CONTAINER = 'movements',
 } = process.env;
 
 // Lazily-initialized client/container handles.
@@ -160,6 +161,12 @@ async function deleteItem(name, id) {
   await getNamedContainer(name).item(id, id).delete();
   return { id };
 }
+async function queryContainer(name, query, parameters = []) {
+  const { resources } = await getNamedContainer(name)
+    .items.query({ query, parameters })
+    .fetchAll();
+  return resources;
+}
 
 // Suppliers
 export const listSuppliers = () => listAll(AZURE_COSMOS_SUPPLIERS_CONTAINER);
@@ -176,3 +183,13 @@ export const updatePurchaseOrder = (id, po) =>
   replaceItem(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, id, po);
 export const deletePurchaseOrder = (id) =>
   deleteItem(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, id);
+
+// Stock movements (ledger)
+export const listMovements = () => listAll(AZURE_COSMOS_MOVEMENTS_CONTAINER);
+export const createMovement = (m) => createItem(AZURE_COSMOS_MOVEMENTS_CONTAINER, m);
+export const getMovementsByProduct = (productId) =>
+  queryContainer(
+    AZURE_COSMOS_MOVEMENTS_CONTAINER,
+    'SELECT * FROM c WHERE c.productId = @p ORDER BY c.createdAt DESC',
+    [{ name: '@p', value: productId }]
+  );

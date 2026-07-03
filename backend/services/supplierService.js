@@ -1,5 +1,6 @@
 // Supplier service — CRUD over mock array or Cosmos `suppliers` container.
 import * as cosmosService from './cosmosService.js';
+import { newId } from '../utils/id.js';
 import { suppliers as mockSuppliers } from '../mocks/suppliers.js';
 
 const useMock = () => process.env.MOCK_DATA === 'true';
@@ -14,7 +15,7 @@ export async function get(id) {
 }
 
 export async function create(data) {
-  const supplier = { id: `sup-${Date.now()}`, leadTimeDays: 0, ...data };
+  const supplier = { id: newId('sup'), leadTimeDays: 0, ...data };
   if (useMock()) {
     mockSuppliers.push(supplier);
     return supplier;

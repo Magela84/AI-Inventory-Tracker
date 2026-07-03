@@ -4,6 +4,8 @@
 // which is the link between purchasing and inventory.
 import * as cosmosService from './cosmosService.js';
 import * as supplierService from './supplierService.js';
+import * as movementService from './movementService.js';
+import { newId } from '../utils/id.js';
 import { purchaseOrders as mockPOs } from '../mocks/purchaseOrders.js';
 import { products as mockProducts } from '../mocks/inventory.js';
 
@@ -25,20 +27,20 @@ function badState(message) {
   return e;
 }
 
-// Adjust a product's stock by `delta` (mock array or Cosmos).
+// Adjust a product's stock by `delta` (mock array or Cosmos). Returns the new
+// quantity, or null if the product wasn't found.
 async function adjustStock(productId, delta) {
   if (useMock()) {
     const product = mockProducts.find((p) => p.id === productId);
-    if (product) product.quantity = (product.quantity || 0) + delta;
-    return;
+    if (!product) return null;
+    product.quantity = (product.quantity || 0) + delta;
+    return product.quantity;
   }
   const product = await cosmosService.getProduct(productId);
-  if (product) {
-    await cosmosService.updateProduct(productId, {
-      ...product,
-      quantity: (product.quantity || 0) + delta,
-    });
-  }
+  if (!product) return null;
+  const quantity = (product.quantity || 0) + delta;
+  await cosmosService.updateProduct(productId, { ...product, quantity });
+  return quantity;
 }
 
 async function save(po) {
@@ -68,7 +70,7 @@ export async function create({ supplierId, items = [] }) {
     unitCost: Number(i.unitCost) || 0,
   }));
   const po = {
-    id: `po-${Date.now()}`,
+    id: newId('po'),
     supplierId,
     supplierName: supplier?.name ?? 'Unknown supplier',
     status: 'draft',
@@ -111,14 +113,25 @@ export async function approve(id) {
   return save({ ...po, status: 'approved', approvedAt: new Date().toISOString() });
 }
 
-// Receive a PO: mark received and increment stock for every line item.
-export async function receive(id) {
+// Receive a PO: mark received, increment stock, and log a ledger movement
+// for every line item.
+export async function receive(id, actor) {
   const po = await get(id);
   if (!po) throw notFound();
   if (po.status !== 'approved') throw badState('Only approved purchase orders can be received');
 
   for (const item of po.items) {
-    await adjustStock(item.productId, Number(item.quantity) || 0);
+    const qty = Number(item.quantity) || 0;
+    const quantityAfter = await adjustStock(item.productId, qty);
+    await movementService.record({
+      productId: item.productId,
+      productName: item.name,
+      delta: qty,
+      quantityAfter,
+      reason: `PO ${po.id} received`,
+      source: 'purchase_order',
+      actor,
+    });
   }
   return save({ ...po, status: 'received', receivedAt: new Date().toISOString() });
 }

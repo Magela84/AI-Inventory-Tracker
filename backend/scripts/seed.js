@@ -15,6 +15,7 @@ import { products } from '../mocks/inventory.js';
 import { users } from '../mocks/users.js';
 import { suppliers } from '../mocks/suppliers.js';
 import { purchaseOrders } from '../mocks/purchaseOrders.js';
+import { movements } from '../mocks/movements.js';
 
 const {
   AZURE_COSMOS_ENDPOINT,
@@ -24,6 +25,7 @@ const {
   AZURE_COSMOS_USERS_CONTAINER = 'users',
   AZURE_COSMOS_SUPPLIERS_CONTAINER = 'suppliers',
   AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER = 'purchaseOrders',
+  AZURE_COSMOS_MOVEMENTS_CONTAINER = 'movements',
 } = process.env;
 
 async function main() {
@@ -83,10 +85,12 @@ async function main() {
   };
   await seedContainer(AZURE_COSMOS_SUPPLIERS_CONTAINER, suppliers, 'supplier(s)');
   await seedContainer(AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER, purchaseOrders, 'purchase order(s)');
+  await seedContainer(AZURE_COSMOS_MOVEMENTS_CONTAINER, movements, 'movement(s)');
 
   console.log(
     `\nDone. Seeded ${count} product(s), ${userCount} user(s), ` +
-      `${suppliers.length} supplier(s), and ${purchaseOrders.length} PO(s) into ${AZURE_COSMOS_DATABASE}.`
+      `${suppliers.length} supplier(s), ${purchaseOrders.length} PO(s), and ` +
+      `${movements.length} movement(s) into ${AZURE_COSMOS_DATABASE}.`
   );
   console.log('Default logins: admin/admin123, staff/staff123 — change these in production.');
 }

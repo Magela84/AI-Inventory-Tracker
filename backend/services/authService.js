@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 import * as cosmosService from './cosmosService.js';
+import { newId } from '../utils/id.js';
 import { users as mockUsers } from '../mocks/users.js';
 
 const useMock = () => process.env.MOCK_DATA === 'true';
@@ -74,7 +75,7 @@ export async function createUser({ username, password, name = '', role = 'staff'
     throw e;
   }
   const user = {
-    id: `user-${Date.now()}`,
+    id: newId('user'),
     username,
     name,
     role,

@@ -3,8 +3,10 @@ import { Router } from 'express';
 
 import * as cosmosService from '../services/cosmosService.js';
 import * as forecastService from '../services/forecastService.js';
+import * as movementService from '../services/movementService.js';
 import { validateProductBody } from '../middleware/validate.js';
 import { requireRole } from '../middleware/requireAuth.js';
+import { newId } from '../utils/id.js';
 import { products as mockProducts } from '../mocks/inventory.js';
 
 const router = Router();
@@ -40,15 +42,27 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/inventory — create product
+// POST /api/inventory — create product (logs initial stock as a movement)
 router.post('/', validateProductBody({ requireName: true }), async (req, res, next) => {
   try {
+    let created;
     if (useMock()) {
-      const created = { id: `sku-${Date.now()}`, ...req.body };
+      created = { id: newId('sku'), ...req.body };
       mockProducts.push(created);
-      return res.status(201).json(created);
+    } else {
+      created = await cosmosService.createProduct(req.body);
     }
-    const created = await cosmosService.createProduct(req.body);
+    if ((created.quantity || 0) > 0) {
+      await movementService.record({
+        productId: created.id,
+        productName: created.name,
+        delta: created.quantity,
+        quantityAfter: created.quantity,
+        reason: 'Initial stock',
+        source: 'manual',
+        actor: req.user,
+      });
+    }
     res.status(201).json(created);
   } catch (err) {
     next(err);
@@ -108,6 +122,60 @@ router.get('/:id/forecast', async (req, res, next) => {
       history: history.map((h) => ({ period: h.timestamp, actual: h.value })),
       forecast: forecast.map((f) => ({ period: f.period, forecast: f.value })),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/inventory/:id/movements — stock-movement history for a product
+router.get('/:id/movements', async (req, res, next) => {
+  try {
+    res.json(await movementService.listByProduct(req.params.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/inventory/:id/adjust — manual stock adjustment (logs a movement)
+// body: { delta: number (non-zero, signed), reason?: string }
+router.post('/:id/adjust', async (req, res, next) => {
+  try {
+    const delta = Number(req.body?.delta);
+    const reason = req.body?.reason ?? 'Manual adjustment';
+    if (!Number.isFinite(delta) || delta === 0) {
+      return res
+        .status(400)
+        .json({ error: { status: 400, message: 'delta must be a non-zero number' } });
+    }
+
+    let product = useMock()
+      ? mockProducts.find((p) => p.id === req.params.id)
+      : await cosmosService.getProduct(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: { status: 404, message: 'Product not found' } });
+    }
+
+    // Clamp so stock never goes negative; record the actually-applied delta.
+    const newQty = Math.max(0, (product.quantity || 0) + delta);
+    const appliedDelta = newQty - (product.quantity || 0);
+
+    if (useMock()) {
+      product.quantity = newQty;
+    } else {
+      product = await cosmosService.updateProduct(product.id, { ...product, quantity: newQty });
+    }
+
+    await movementService.record({
+      productId: product.id,
+      productName: product.name,
+      delta: appliedDelta,
+      quantityAfter: newQty,
+      reason,
+      source: 'manual',
+      actor: req.user,
+    });
+
+    res.json(product);
   } catch (err) {
     next(err);
   }

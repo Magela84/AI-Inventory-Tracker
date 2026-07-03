@@ -55,7 +55,7 @@ router.post('/:id/approve', requireRole('admin'), async (req, res, next) => {
 // Receive an approved PO — increments stock for each line item.
 router.post('/:id/receive', async (req, res, next) => {
   try {
-    res.json(await purchaseOrderService.receive(req.params.id));
+    res.json(await purchaseOrderService.receive(req.params.id, req.user));
   } catch (err) {
     next(err);
   }

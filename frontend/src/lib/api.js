@@ -87,6 +87,12 @@ export const updateProduct = (id, product) =>
 export const deleteProduct = (id) =>
   request(`/inventory/${id}`, { method: 'DELETE' });
 export const getForecast = (id) => request(`/inventory/${id}/forecast`);
+export const adjustStock = (id, delta, reason) =>
+  request(`/inventory/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta, reason }) });
+export const getProductMovements = (id) => request(`/inventory/${id}/movements`);
+
+// Movement ledger (recent, all products)
+export const getMovements = (limit = 50) => request(`/movements?limit=${limit}`);
 
 // Alerts
 export const getLowStock = () => request('/alerts/low-stock');
@@ -151,6 +157,9 @@ export default {
   approvePurchaseOrder,
   receivePurchaseOrder,
   deletePurchaseOrder,
+  adjustStock,
+  getProductMovements,
+  getMovements,
   setAuthToken,
   setUnauthorizedHandler,
   toForecastChartData,

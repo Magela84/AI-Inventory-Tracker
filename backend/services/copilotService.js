@@ -12,6 +12,7 @@ import { products as mockProducts } from '../mocks/inventory.js';
 import * as cosmosService from './cosmosService.js';
 import * as forecastService from './forecastService.js';
 import { getClient } from './openaiService.js';
+import { newId } from '../utils/id.js';
 
 const {
   AZURE_OPENAI_DEPLOYMENT = 'gpt-4o',
@@ -43,7 +44,7 @@ async function persistUpdate(product) {
 
 async function persistCreate(data) {
   if (useMock()) {
-    const created = { id: `sku-${Date.now()}`, demandHistory: [], ...data };
+    const created = { id: newId('sku'), demandHistory: [], ...data };
     mockProducts.push(created);
     return created;
   }

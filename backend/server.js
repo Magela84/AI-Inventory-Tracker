@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import suppliersRoutes from './routes/suppliers.js';
 import purchaseOrdersRoutes from './routes/purchaseOrders.js';
+import movementsRoutes from './routes/movements.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiKeyAuth } from './middleware/auth.js';
 import { requireAuth } from './middleware/requireAuth.js';
@@ -41,6 +42,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/suppliers', suppliersRoutes);
 app.use('/api/purchase-orders', purchaseOrdersRoutes);
+app.use('/api/movements', movementsRoutes);
 
 // Centralized error handling (must be last)
 app.use(errorHandler);

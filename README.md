@@ -21,9 +21,10 @@ natural language search + reorder suggestions.
 ai-inventory-tracker/
 ├── backend/
 │   ├── server.js              # Express entrypoint
-│   ├── routes/                # inventory, alerts, ai, auth, users, suppliers, purchaseOrders
+│   ├── routes/                # inventory, alerts, ai, auth, users, suppliers,
+│   │                          #   purchaseOrders, movements
 │   ├── services/              # cosmos, anomaly, openai, forecast, copilot, auth,
-│   │                          #   supplier, purchaseOrder
+│   │                          #   supplier, purchaseOrder, movement
 │   ├── scripts/seed.js        # seed mock products into Cosmos DB
 │   ├── mocks/                 # mock data for MOCK_DATA=true
 │   ├── middleware/            # errorHandler
@@ -38,7 +39,8 @@ ai-inventory-tracker/
 │   │   │                      #   RunwayBar (days-of-stock indicator),
 │   │   │                      #   PhotoIntake (GPT-4o Vision product scan),
 │   │   │                      #   Login, UsersManager (auth + admin user mgmt),
-│   │   │                      #   SuppliersManager, PurchaseOrders (procurement)
+│   │   │                      #   SuppliersManager, PurchaseOrders (procurement),
+│   │   │                      #   MovementsLedger (stock audit trail)
 │   │   ├── context/AuthContext.jsx  # current user + JWT state
 │   │   ├── pages/Dashboard.jsx
 │   │   ├── lib/api.js         # backend API client
@@ -133,6 +135,7 @@ See [`backend/.env.example`](backend/.env.example).
 | `AZURE_COSMOS_USERS_CONTAINER` | Users container name (default `users`) |
 | `AZURE_COSMOS_SUPPLIERS_CONTAINER` | Suppliers container (default `suppliers`) |
 | `AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER` | Purchase orders container (default `purchaseOrders`) |
+| `AZURE_COSMOS_MOVEMENTS_CONTAINER` | Movements/ledger container (default `movements`) |
 | `JWT_SECRET` | Secret for signing user JWTs (set a long random value in production) |
 | `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_KEY` / `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI (GPT-4o) |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version (default `2024-10-21`) |
@@ -160,7 +163,10 @@ See [`backend/.env.example`](backend/.env.example).
 | GET/POST/PUT/DELETE | `/api/suppliers` | Supplier management (delete **admin only**) |
 | GET/POST | `/api/purchase-orders` | List / create purchase orders |
 | POST   | `/api/purchase-orders/:id/approve` | Approve a draft PO (**admin only**) |
-| POST   | `/api/purchase-orders/:id/receive` | Receive an approved PO — **increments stock** |
+| POST   | `/api/purchase-orders/:id/receive` | Receive an approved PO — **increments stock + logs movements** |
+| POST   | `/api/inventory/:id/adjust` | Manual stock adjustment (signed delta + reason) — logs a movement |
+| GET    | `/api/inventory/:id/movements` | Movement history for one product |
+| GET    | `/api/movements` | Recent stock-movement ledger (all products) |
 | GET    | `/api/inventory/:id/forecast` | Demand forecast |
 | GET    | `/api/alerts/low-stock` | Products below reorder threshold |
 | GET    | `/api/alerts/anomalies/:id` | Anomaly detection for a product |
@@ -195,6 +201,16 @@ modal by choosing a supplier and adding product line items:
 - **approved** — an admin approves a draft (separation of duties).
 - **received** — receiving an approved PO **increments each line item's product
   stock**, connecting procurement to inventory. Deleting/cancelling is admin-only.
+
+### Stock-movement ledger
+
+Every stock change is recorded as an immutable movement — `{ type (in/out),
+delta, quantityAfter, reason, source, username, createdAt }`. Movements are
+written on **PO receipt** (`source: purchase_order`), **manual adjustment**
+(`source: manual`, via the product panel's *Adjust stock* control), and **initial
+stock** on product creation. The product detail panel shows a product's history;
+the **Ledger** button opens the full audit trail across all products, including
+who made each change.
 
 ### Authentication & roles
 
