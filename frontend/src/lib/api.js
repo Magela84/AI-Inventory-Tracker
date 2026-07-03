@@ -45,9 +45,16 @@ async function request(path, options = {}) {
   return res.json();
 }
 
+// Auth config exposed to the UI (e.g. whether Google sign-in is available).
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 // Auth
 export const login = (username, password) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+export const register = (name, email, password) =>
+  request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) });
+export const googleLogin = (credential) =>
+  request('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) });
 export const getMe = () => request('/auth/me');
 
 // Users (admin)

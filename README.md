@@ -137,6 +137,8 @@ See [`backend/.env.example`](backend/.env.example).
 | `AZURE_COSMOS_PURCHASE_ORDERS_CONTAINER` | Purchase orders container (default `purchaseOrders`) |
 | `AZURE_COSMOS_MOVEMENTS_CONTAINER` | Movements/ledger container (default `movements`) |
 | `JWT_SECRET` | Secret for signing user JWTs (set a long random value in production) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID — enables "Sign in with Google" |
+| `ADMIN_EMAILS` | Comma-separated emails granted `admin` on first signup |
 | `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_KEY` / `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI (GPT-4o) |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version (default `2024-10-21`) |
 | `AZURE_ANOMALY_DETECTOR_ENDPOINT` / `AZURE_ANOMALY_DETECTOR_KEY` | Anomaly Detector |
@@ -150,13 +152,16 @@ See [`backend/.env.example`](backend/.env.example).
 |----------|-------------|
 | `VITE_API_BASE_URL` | Backend API base URL (default `http://localhost:3001/api`) |
 | `VITE_API_KEY` | Sent as `x-api-key` on every request; must match the backend `API_KEY` |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID (same as backend `GOOGLE_CLIENT_ID`) |
 
 ## API Overview
 
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET    | `/api/health` | Health check (public) |
-| POST   | `/api/auth/login` | Exchange credentials for a JWT (public) |
+| POST   | `/api/auth/login` | Log in with username/email + password (public) |
+| POST   | `/api/auth/register` | Self-service signup with email + password (public) |
+| POST   | `/api/auth/google` | Sign in / up with a Google ID token (public) |
 | GET    | `/api/auth/me` | Current authenticated user |
 | GET/POST/PUT/DELETE | `/api/users` | User management (**admin only**) |
 | GET/POST/PUT/DELETE | `/api/inventory` | Product CRUD (delete is **admin only**) |
@@ -214,12 +219,29 @@ who made each change.
 
 ### Authentication & roles
 
-Passwords are hashed with bcrypt; JWTs are signed with `JWT_SECRET`. In
-`MOCK_DATA=true` the seeded demo users are **admin / admin123** and
-**staff / staff123** (shown on the login screen). For real Azure, `npm run seed`
-creates a `users` container and seeds the same two accounts — **change these
-passwords in production.** The optional `API_KEY` gate still applies on top when
-set (belt-and-suspenders for machine-to-machine callers).
+Users can authenticate three ways:
+
+- **Username/email + password** — the seeded demo users are **admin / admin123**
+  and **staff / staff123**.
+- **Self-service signup** — the login screen's *Create account* form registers a
+  new user with any email (e.g. Gmail) + password; new accounts default to `staff`.
+- **Sign in with Google** — a "Sign in with Google" button appears when Google
+  OAuth is configured; first sign-in provisions a passwordless user.
+
+Passwords are hashed with bcrypt; JWTs are signed with `JWT_SECRET`. Emails listed
+in `ADMIN_EMAILS` receive the `admin` role on first signup. The optional `API_KEY`
+gate still applies on top when set.
+
+#### Enabling "Sign in with Google"
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+   create an **OAuth 2.0 Client ID** (type *Web application*), adding your app's
+   origin (e.g. `http://localhost:5173`) to **Authorized JavaScript origins**.
+2. Set `GOOGLE_CLIENT_ID` in `backend/.env` **and** `VITE_GOOGLE_CLIENT_ID` (the
+   same value) in `frontend/.env`.
+3. Restart. The Google button appears automatically; the backend verifies the ID
+   token server-side with `google-auth-library`. When unset, the button is hidden
+   and `/api/auth/google` returns `501`.
 
 ### Inventory Copilot
 

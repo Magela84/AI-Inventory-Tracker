@@ -110,6 +110,17 @@ export async function getUserByUsername(username) {
   return resources[0] ?? null;
 }
 
+// Look up a user by username OR email (for login and OAuth provisioning).
+export async function getUserByIdentifier(identifier) {
+  const { resources } = await getUsersContainer()
+    .items.query({
+      query: 'SELECT * FROM c WHERE c.username = @i OR c.email = @i',
+      parameters: [{ name: '@i', value: identifier }],
+    })
+    .fetchAll();
+  return resources[0] ?? null;
+}
+
 export async function createUser(user) {
   const { resource } = await getUsersContainer().items.create(user);
   return resource;
