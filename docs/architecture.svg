@@ -1,0 +1,53 @@
+<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg" role="img" width="780" height="500" style="font-family:Segoe UI,Roboto,system-ui,sans-serif;background:#ffffff">
+  <title>AI Inventory Tracker — Azure architecture</title>
+  <desc>Three-tier app: React frontend on Static Web Apps, a stateless Express API on App Service with JWT and role-based access, calling Azure Cosmos DB, Azure OpenAI GPT-4o, and Anomaly Detector via managed identity. A MOCK_DATA flag runs everything on local seed data.</desc>
+  <rect x="0" y="0" width="780" height="500" fill="#ffffff"/>
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#ffffff;stroke:#cbd5e1;stroke-width:1.5;}
+    .az{fill:#eff6ff;stroke:#2563eb;stroke-width:1.5;}
+    .t{fill:#0f172a;font-weight:700;font-size:14px;}
+    .s{fill:#64748b;font-size:11.5px;}
+    .lbl{fill:#64748b;font-size:11px;font-style:italic;}
+    .flow{stroke:#94a3b8;stroke-width:1.6;fill:none;}
+    .foot{fill:#475569;font-size:12px;}
+  </style>
+
+  <rect class="box" x="310" y="24" width="160" height="46" rx="12"/>
+  <text class="t" x="390" y="52" text-anchor="middle">User / Browser</text>
+
+  <path class="flow" d="M390 70 L390 118" marker-end="url(#arw)"/>
+  <rect class="box" x="265" y="118" width="250" height="62" rx="12"/>
+  <text class="t" x="390" y="143" text-anchor="middle">Frontend — React + Tailwind</text>
+  <text class="s" x="390" y="163" text-anchor="middle">Azure Static Web Apps</text>
+
+  <text class="lbl" x="400" y="205" text-anchor="start">HTTPS · JWT</text>
+  <path class="flow" d="M390 180 L390 226" marker-end="url(#arw)"/>
+  <rect class="box" x="240" y="226" width="300" height="66" rx="12"/>
+  <text class="t" x="390" y="252" text-anchor="middle">Backend API — Node / Express</text>
+  <text class="s" x="390" y="272" text-anchor="middle">Azure App Service · JWT + RBAC · forecasting</text>
+
+  <path class="flow" d="M390 292 C 300 320, 175 322, 140 356" marker-end="url(#arw)"/>
+  <path class="flow" d="M390 292 L390 356" marker-end="url(#arw)"/>
+  <path class="flow" d="M390 292 C 480 320, 605 322, 640 356" marker-end="url(#arw)"/>
+
+  <rect class="az" x="30" y="356" width="220" height="66" rx="12"/>
+  <text class="t" x="140" y="382" text-anchor="middle">Azure Cosmos DB</text>
+  <text class="s" x="140" y="402" text-anchor="middle">NoSQL (SQL API) · /id key</text>
+
+  <rect class="az" x="280" y="356" width="220" height="66" rx="12"/>
+  <text class="t" x="390" y="382" text-anchor="middle">Azure OpenAI · GPT-4o</text>
+  <text class="s" x="390" y="402" text-anchor="middle">NL copilot + reorder</text>
+
+  <rect class="az" x="530" y="356" width="220" height="66" rx="12"/>
+  <text class="t" x="640" y="382" text-anchor="middle">Anomaly Detector</text>
+  <text class="s" x="640" y="402" text-anchor="middle">demand-spike detection</text>
+
+  <rect x="30" y="446" width="14" height="14" rx="3" class="az"/>
+  <text class="foot" x="52" y="457">Azure managed service — auth via DefaultAzureCredential (managed identity, no secrets)</text>
+  <text class="foot" x="30" y="480">MOCK_DATA flag runs the whole app on local seed data — zero cloud spend in dev</text>
+</svg>

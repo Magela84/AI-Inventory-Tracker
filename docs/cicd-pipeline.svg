@@ -1,0 +1,59 @@
+<svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" role="img" width="820" height="340" style="font-family:Segoe UI,Roboto,system-ui,sans-serif;background:#ffffff">
+  <title>CI/CD pipeline — AI Inventory Tracker</title>
+  <desc>Developer pushes to GitHub main; GitHub Actions runs CI (install, test, build), and on a green build CD deploys the frontend to Azure Static Web Apps and the backend to Azure App Service. Tests gate the deploy and OIDC federated credentials mean passwordless, secretless deployment.</desc>
+  <rect x="0" y="0" width="820" height="340" fill="#ffffff"/>
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#ffffff;stroke:#cbd5e1;stroke-width:1.5;}
+    .az{fill:#eff6ff;stroke:#2563eb;stroke-width:1.5;}
+    .t{fill:#0f172a;font-weight:700;font-size:13.5px;}
+    .s{fill:#64748b;font-size:11px;}
+    .lbl{fill:#64748b;font-size:10.5px;font-style:italic;}
+    .flow{stroke:#94a3b8;stroke-width:1.6;fill:none;}
+    .foot{fill:#475569;font-size:12px;}
+  </style>
+
+  <rect class="box" x="24" y="56" width="152" height="60" rx="12"/>
+  <text class="t" x="100" y="82" text-anchor="middle">Developer</text>
+  <text class="s" x="100" y="100" text-anchor="middle">git push</text>
+
+  <path class="flow" d="M176 86 L204 86" marker-end="url(#a2)"/>
+
+  <rect class="box" x="204" y="56" width="152" height="60" rx="12"/>
+  <text class="t" x="280" y="82" text-anchor="middle">GitHub · main</text>
+  <text class="s" x="280" y="100" text-anchor="middle">source of truth</text>
+
+  <text class="lbl" x="370" y="50" text-anchor="middle">on push</text>
+  <path class="flow" d="M356 86 L384 86" marker-end="url(#a2)"/>
+
+  <rect class="box" x="384" y="56" width="176" height="60" rx="12"/>
+  <text class="t" x="472" y="82" text-anchor="middle">GitHub Actions — CI</text>
+  <text class="s" x="472" y="100" text-anchor="middle">install · test · build</text>
+
+  <text class="lbl" x="574" y="50" text-anchor="middle">if green</text>
+  <path class="flow" d="M560 86 L588 86" marker-end="url(#a2)"/>
+
+  <rect class="box" x="588" y="56" width="176" height="60" rx="12"/>
+  <text class="t" x="676" y="82" text-anchor="middle">GitHub Actions — CD</text>
+  <text class="s" x="676" y="100" text-anchor="middle">deploy on green</text>
+
+  <path class="flow" d="M676 116 C 560 160, 470 168, 414 204" marker-end="url(#a2)"/>
+  <path class="flow" d="M676 116 C 700 160, 660 176, 646 204" marker-end="url(#a2)"/>
+
+  <rect class="az" x="316" y="204" width="196" height="60" rx="12"/>
+  <text class="t" x="414" y="230" text-anchor="middle">Azure Static Web Apps</text>
+  <text class="s" x="414" y="248" text-anchor="middle">frontend (React)</text>
+
+  <rect class="az" x="548" y="204" width="196" height="60" rx="12"/>
+  <text class="t" x="646" y="230" text-anchor="middle">Azure App Service</text>
+  <text class="s" x="646" y="248" text-anchor="middle">backend API</text>
+
+  <rect x="24" y="292" width="14" height="14" rx="3" class="az"/>
+  <text class="foot" x="46" y="303">Azure deploy target</text>
+  <text class="foot" x="200" y="303">Tests gate deploy — a red build never ships</text>
+  <text class="foot" x="24" y="326">OIDC federated credentials — passwordless deploy, no stored cloud secrets</text>
+</svg>
